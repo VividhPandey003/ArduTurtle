@@ -26,7 +26,7 @@ ArduTurtle🌱 is a versatile and portable device designed for everyday utility 
 
 ## Installation Instructions
 
-1. Assemble the hardware according to the schematic provided in [link to schematics].
+1. Assemble the hardware according to the schematic provided in the schematic [in progress].
 2. Install the Arduino IDE on your computer.
 3. Download the project files and open `arduTurtle.ino` with the Arduino IDE.
 4. Install the necessary libraries through the Arduino Library Manager.
