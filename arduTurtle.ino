@@ -1,671 +1,208 @@
-#include < SPI.h >
-#include < Wire.h >
-#include "calculator.h"
-#include "stopwatch.h"
-#include "game.h"
-#include "calendar.h"
-#include "menu.h"
+#include <AFMotor.h>
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "eyes.h"
 
-#include < Adafruit_GFX.h >
-#include < Adafruit_SSD1306.h > 
-
-#define OLED_RESET     4 / / Reset pin # (or - 1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C / / / < See datasheet for Address;
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-0x3D for 128x64,
-0x3C for 128x32
-Adafruit_SSD1306 display(OLED_RESET);
-byte fase = 0;
-void setup()
-{
-pinMode(up,
-INPUT_PULLUP);
-pinMode(presS,
-INPUT_PULLUP);
-pinMode(down,
-INPUT_PULLUP);
-pinMode(3,
-OUTPUT);
-display.begin(SSD1306_SWITCHCAPVCC,
-SCREEN_ADDRESS);
-display.display();
-display.clearDisplay();
-display.setRotation(3);
-playerX = random(10,
-50);
-display.clearDisplay();
-display.setFont(0);
-display.setTextColor(WHITE);
-display.display();
+
+SoftwareSerial bluetoothSerial(9, 10); // RX, TX
+AF_DCMotor motor3(3, MOTOR34_1KHZ);    // initial motors pin
+AF_DCMotor motor4(4, MOTOR34_1KHZ);
+char command;
+
+void setup() {
+  bluetoothSerial.begin(9600); // Set the baud rate to your Bluetooth module
+  Serial.begin(9600);
+  Serial.println("Booting");
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c)) { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;) {
+    }
+  }
+  display.clearDisplay();
+  display.display();
 }
 
-void loop()
-{
-if (fase == 0)
-{
-checkButtonsMenu();
-drawMenu();
+unsigned char readkey(char input) {
+  unsigned char ret = 0;
+  if (input == 'm') {
+    ret = 1;
+  } else if (input == 'l') {
+    ret += 2;
+  } else if (input == 'r') {
+    ret += 4;
+  }
+
+  return ret;
 }
 
-  if (fase == 1)
-{
-checkButtonsCalc();
-drawCalc();
+int xp = 16;
+int mood = 0;
+
+void forward() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(FORWARD);  // rotate the motor clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(FORWARD);  // rotate the motor clockwise
 }
 
-  if (fase == 2)
-{
-checkButtonsStop();
-drawStop();
+void back() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(BACKWARD); // rotate the motor anti-clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(BACKWARD); // rotate the motor anti-clockwise
 }
 
-  if (fase == 3)
-{
-checkColision();
-checkButtonsGame();
-drawGame();
+void left() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(BACKWARD);  // rotate the motor clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(FORWARD);  // rotate the motor clockwise
 }
 
-  if (fase == 4)
-{
-calendarDraw();
-checkButtonsCalendar();
+void right() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(FORWARD); // rotate the motor anti-clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(BACKWARD); // rotate the motor anti-clockwise
 }
 
-   if (fase == 5)
-{
-phoneDraw();
+void topleft() {
+  motor3.setSpeed(180); // Define maximum velocity
+  motor3.run(FORWARD);  // rotate the motor clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(FORWARD);  // rotate the motor clockwise
 }
 
-  if (digitalRead(down) == 0 & & digitalRead(presS) == 0 )
-{
-GameReset();
-display.setRotation(3);
-resetAll();
-fase = 0;
-delay(500);
-}
+void topright() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(FORWARD);  // rotate the motor clockwise
+  motor4.setSpeed(180); // Define maximum velocity
+  motor4.run(FORWARD);  // rotate the motor clockwise
 }
 
-void drawCalc()
-{
-display.clearDisplay();
-display.drawRoundRect(0,
-0,
-64,
-128,
-3,
-1);
-display.fillRoundRect(6,
-16,
-52,
-16,
-2,
-1);
-display.setCursor(6,
-4);
-display.print("CALC");
-for (int i = 0;
-i < n;
-i + +)
-{
-posY[i] = fromTop + (boxH * i) + (space * i);
-for (int j = 0;
-j < m;
-j + +)
-{   
-      posX[j] = fromLeft + (boxW * j) + (space * j);
-display.fillRoundRect(posX[j],
-posY[i],
-boxW,
-boxH,
-2,
-1);
-display.setCursor(posX[j] + (boxW / 2) - 3,
-posY[i] + (boxH / 2) - 3);
-display.setTextColor(0);
-display.print(buttons[j][i]);
-}}
-  display.setTextColor(1);
-display.fillRoundRect(posX[cx],
-posY[cy],
-boxW,
-boxH,
-2,
-0);
-display.drawRoundRect(posX[cx],
-posY[cy],
-boxW,
-boxH,
-2,
-1);
-display.setCursor(posX[cx] + (boxW / 2) - 2,
-posY[cy] + (boxH / 2) - 4);
-display.print(buttons[cx][cy]);
-display.setCursor(6,
-4);
-display.print("CALC");
-display.setCursor(10,
-20);
-display.setTextColor(0);
-temp = num * 10;
-if(temp % 10 == 0)
-  display.print((int)num);
-else 
-  display.print(num);
-display.display();
-display.setTextColor(1);
+void bottomleft() {
+  motor3.setSpeed(180); // Define maximum velocity
+  motor3.run(BACKWARD); // rotate the motor anti-clockwise
+  motor4.setSpeed(255); // Define maximum velocity
+  motor4.run(BACKWARD); // rotate the motor anti-clockwise
 }
 
- void checkButtonsCalc()
-{
-if (digitalRead(up) == 0)
-{
-if (db1 == 0)
-{
-db1 = 1;
-cx + +;
-}
-}else db1 = 0;
-if (digitalRead(down) == 0)
-{
-if (db2 == 0)
-{
-db2 = 1;
-cy + +;
-}
-}else db2 = 0;
-if(cx == 4)
-  cx = 0;
-if(cy == 4)
-  cy = 0;
-if (digitalRead(presS) == 0)
-{
-if (db3 == 0)
-{
-db3 = 1;
-if (buttons[cx][cy] == '0' | | buttons[cx][cy] == '1' | | buttons[cx][cy] == '2' | | buttons[cx][cy] == '3' | | buttons[cx][cy] == '4' | | buttons[cx][cy] == '5' | | buttons[cx][cy] == '6' | | buttons[cx][cy] == '7' | | buttons[cx][cy] == '8' | |  buttons[cx][cy] == '9' | | buttons[cx][cy] == '.' )
-{
-num = num * (digit * 10) + buttons[cx][cy] - '0';
-digit = 1;
+void bottomright() {
+  motor3.setSpeed(255); // Define maximum velocity
+  motor3.run(BACKWARD); // rotate the motor anti-clockwise
+  motor4.setSpeed(180); // Define maximum velocity
+  motor4.run(BACKWARD); // rotate the motor anti-clockwise
 }
 
-  if (buttons[cx][cy] == 'C')
-{num = 0;
-cx = 0;
-cy = 0;
-operation = 0;
+void Stop() {
+  motor3.setSpeed(0);  // Define minimum velocity
+  motor3.run(RELEASE); // stop the motor when releasing the button
+  motor4.setSpeed(0);  // Define minimum velocity
+  motor4.run(RELEASE); // stop the motor when releasing the button
 }
 
-              if (buttons[cx][cy] == ' + ')
-{operation = 1;
-n1 = num;
-num = 0;
-}
-              if (buttons[cx][cy] == ' - ')
-{operation = 2;
-n1 = num;
-num = 0;
-}
-              if (buttons[cx][cy] == ' * ')
-{operation = 3;
-n1 = num;
-num = 0;
-}
-              if (buttons[cx][cy] == ' / ')
-{operation = 4;
-n1 = num;
-num = 0;
-}
+void loop() {
+  int n;
+  if (bluetoothSerial.available() > 0) {
+    command = bluetoothSerial.read();
+    Stop(); // initialize with motors stopped
+    Serial.println(command);
+    switch (command) {
+      case 'F':
+        forward();
+        break;
+      case 'B':
+        back();
+        break;
+      case 'L':
+        left();
+        break;
+      case 'R':
+        right();
+        break;
+      case 'G':
+        topleft();
+        break;
+      case 'I':
+        topright();
+        break;
+      case 'J':
+        bottomright();
+        break;
+      case 'H':
+        bottomleft();
+        break;
+    }
 
-  if (buttons[cx][cy] == ' = ')
-{
-if (operation == 1)
-{float r = n1 + num;
-num = r;
-n1 = num;
-}
+    static int xd = 4;
+    static int wait = 0;
+    static int step = 0;
+    int x1, x2;
+    if (wait > 0) {
+      wait--;
+      delay(1);
+    } else {
+      x1 = xd + (xp > 16 ? (16 + 2 * (xp - 16)) : xp);
+      x2 = 64 + xd + (xp < 16 ? (-16 + (xp * 2)) : xp);
+      switch (step) {
+        case 0:
+          display.clearDisplay();
+          if (xp < 6) { // if eyes to the left
+            display.drawBitmap(x1, 18, peyes[mood][2][0], 32, 32, WHITE);
+            display.drawBitmap(x2, 18, peyes[mood][1][1], 32, 32, WHITE);
+          } else if (xp < 26) { // if eyes to the right
+            display.drawBitmap(x1, 18, peyes[mood][0][0], 32, 32, WHITE);
+            display.drawBitmap(x2, 18, peyes[mood][0][1], 32, 32, WHITE);
+          } else {   // if normal
+            display.drawBitmap(x1, 18, peyes[mood][1][0], 32, 32, WHITE);
+            display.drawBitmap(x2, 18, peyes[mood][2][1], 32, 32, WHITE);
+          }
+          display.display();
+          wait = random(250, 1000);
+          n = random(0, 7);
+          if (n == 6) {
+            step = 1;
+          } else {
+            step = 2;
+          }
+          break;
+                case 1:
+          display.clearDisplay();
+          display.drawBitmap(x1, 8, eye0, 32, 32, WHITE);
+          display.drawBitmap(x2, 8, eye0, 32, 32, WHITE);
+          display.display();
+          wait = 100;
+          step = 0;
+          break;
+        case 2:
+          n = random(0, 10);
+          if (n < 5) xd--;
+          if (n >= 5) xd++;
+          if (xd < -4) xd = -3;
+          if (xd > 4) xd = 3;
+          wait = 0;
+          step = 0;
+          break;
+      }
+    }
 
-                if (operation == 2)
-{float r = n1 - num;
-num = r;
-n1 = num;
-}
-
-                if (operation == 3)
-{float r = n1 * num;
-num = r;
-n1 = num;
-}
-
-                if (operation == 4)
-{float r = n1 / num;
-num = r;
-n1 = num;
-}
-
-               delay(200);
-}  
-}
-}else db3 = 0;
-}
-
-  void drawStop()
-{
-display.setFont();
-display.clearDisplay();
-display.setTextColor(1);
-display.setCursor(0,
-0);
-display.print("STOPWATCH");
-display.setCursor(0,
-20);
-display.setTextSize(2);
-display.print(s_min);
-display.setCursor(24,
-20);
-display.print(":");
-display.setCursor(34,
-20);
-display.print(s_sec);
-display.setTextSize(4);
-display.setCursor(6,
-64);
-display.print((int)s_milis);
-display.display();
-if (s_fase == 1)
-{
-s_milis = s_milis + 3.5;
-if (s_milis > 99)
-{
-s_sec + +;
-s_milis = 0;
-}
-
-        if (s_sec > 59)
-{
-s_min + +;
-s_sec = 0;
-}
-}
-   display.setTextSize(0);
-}  
-
-  void checkButtonsStop()
-{
-if (digitalRead(presS) == 0)
-{
-if (db3 == 0)
-{
-db3 = 1;
-s_fase + +;
-if (s_fase == 3)
-{ s_fase = 0;
-s_milis = 0;
-s_sec = 0;
-s_min = 0;
-}
-}
-}else db3 = 0;
-}
-
-  void drawGame()
-{
-display.clearDisplay();
-display.setCursor(40,
-0);
-display.print(gameScore);
-display.setCursor(2,
-0);
-display.print("Score:");
-display.drawLine(0,
-9,
-0,
-127,
-1);
-display.drawLine(63,
-9,
-63,
-127,
-1);
-display.drawLine(0,
-9,
-63,
-9,
-1);
-display.fillRect(playerX,
-118,
-playerW,
-2,
-1);
-display.fillCircle(ballX,
-ballY,
-1,
-1);
-for(int i = 0;
-i < 14;
-i + +)
-    if(enL[i] == 1)
-    display.fillRect(enX[i],
-enY[i],
-8,
-2,
-1);
-display.display();
-}
-
-    void checkButtonsGame()
-{
-if (digitalRead(presS) == 0)
-{
-if (db3 == 0)
-{
-db3 = 1;
-controler = !controler;
-digitalWrite(3,
-controler);
-}
-}else db3 = 0;
-if (controler == 1)
-{
-playerX = map(analogRead(A0),
-0,
-1023,
-1,
-63 - playerW);
-}
-        
-        if (controler == 0)
-{
-if(digitalRead(down) == 0)
-        if(playerX > 1)
-        playerX - -;
-if(digitalRead(up) == 0)
-        if(playerX < 62 - playerW)
-        playerX + +;
-}
-}
-
-    void GameReset()
-{
-ballX = random(10,
-50);
-ballY = 50;
-ballDirectionX = 1;
-ballDirectionY = 1;
-gameScore = 0;
-for(int i = 0;
-i < 14;
-i + +)
-      enL[i] = 1;
-}
-
-    void gameOver()
-{
-display.clearDisplay();
-display.setCursor(6,
-20);
-display.print(gameScore);
-display.setTextSize(2);
-display.setCursor(6,
-40);
-display.print("GAME");
-display.setCursor(6,
-60);
-display.print("OVER");
-display.setTextSize(0);
-display.display();
-delay(3000);
-GameReset();
-}
-
-    void checkColision()
-{
-if(ballX < 4 | | ballX > 62)
-     ballDirectionX = ballDirectionX * -1;
-if(ballY < 10)
-     ballDirectionY = ballDirectionY * -1;
-if(ballY > 116 & & ballX > playerX & & ballX < playerX + playerW)
-     ballDirectionY = ballDirectionY * -1;
-for(int i = 0;
-i < 14;
-i + +)
-    if (ballX > enX[i] & & ballX < enX[i] + 8 & & ballY > enY[i] & & ballY < enY[i] + 2 & & enL[i] == 1)
-{
-ballDirectionY = ballDirectionY * -1;
-enL[i] = 0;
-gameScore + +;
-}
-     
-     ballX = ballX + ballDirectionX;
-ballY = ballY + ballDirectionY;
-if(ballY > 124)
-     gameOver();
-if(gameScore % 14 == 0 & & gameScore != 0)
-     GameReset();
-}
-
-    void calendarDraw()
-{
-display.setRotation(0);
-display.clearDisplay();
-display.setCursor(0,
-0);
-display.print("Mo Tu We Th Fr Sa Su");
-int d = 1;
-int dd = 1;
-for(int i = 0;
-i < 6;
-i + +)
-      for (int j = 0;
-j < 7;
-j + +)
-{
-if (dd <= dayS[chosenMonth] & & d >= startDay[chosenMonth])
-{
-display.setCursor(j * 18,
-(i + 1) * 9);
-display.print(dd);
-dd + +;
-}
-        d + +;
-}
-      display.setCursor(70,
-55);
-display.print(chosenMonth + 1);
-display.print(" / 2022");
-display.display();
-}
-
-      void checkButtonsCalendar()
-{
-if (digitalRead(up) == 0)
-{
-if (db1 == 0)
-{
-db1 = 1;
-if(chosenMonth > 0)
-  chosenMonth - -;
-}
-}else db1 = 0;
-if (digitalRead(down) == 0)
-{
-if (db2 == 0)
-{
-db2 = 1;
-if(chosenMonth < 11)
-  chosenMonth + +;
-}
-}else db2 = 0;
-}
-
-      void drawMenu()
-{
-display.clearDisplay();
-display.setCursor(34,
-94);
-display.print("Beep");
-display.setCursor(38,
-104);
-if(sounds == 1)
-        display.print("ON");
-else
-        display.print("OFF");
-display.setCursor(0,
-120);
-if(chosenMenu == 0)
-        display.print("Calculator");
-if(chosenMenu == 1)
-        display.print("Stopwatch");
-if(chosenMenu == 2)
-        display.print("Games");
-if(chosenMenu == 3)
-        display.print("Calendar");
-if(chosenMenu == 4)
-        display.print("PhoneBook");
-display.drawBitmap(0,
-0,
-epd_bitmap_logo,
-64,
-30,
-1);
-display.drawBitmap(menuX[0],
-menuY[0],
-myBitmapcalc,
-24,
-24,
-1);
-display.drawBitmap(menuX[1],
-menuY[1],
-myBitmapstop,
-24,
-24,
-1);
-display.drawBitmap(menuX[2],
-menuY[2],
-myBitmapgam,
-24,
-24,
-1);
-display.drawBitmap(menuX[3],
-menuY[3],
-myBitmapcalen,
-24,
-24,
-1);
-display.drawBitmap(menuX[4],
-menuY[4],
-myBitmapphone,
-24,
-24,
-1);
-display.drawRoundRect(menuX[chosenMenu] - 2,
-menuY[chosenMenu] - 2,
-28,
-28,
-2,
-1);
-display.display();
-}
-
-        void checkButtonsMenu()
-{
-if (digitalRead(up) == 0)
-{
-if (db1 == 0)
-{
-db1 = 1;
-if(sounds == 1)tone(9,
-1100,
-50);
-if(chosenMenu > 0)
-  chosenMenu - -;
-}
-}else db1 = 0;
-if (digitalRead(down) == 0)
-{
-if (db2 == 0)
-{
-db2 = 1;
-if(sounds == 1)tone(9,
-1100,
-50);
-if(chosenMenu < 5)
-  chosenMenu + +;
-}
-}else db2 = 0;
-if (digitalRead(presS) == 0)
-{
-if(chosenMenu == 5)
-  sounds = !sounds;
-else 
-  fase = chosenMenu + 1;
-if(sounds == 1)tone(9,
-1100,
-50);
-delay(400);
-}
-}
-
-void resetAll()
-{display.setFont();
-cy = 0;
-cy = 0;
-n1 = 0;
-n2 = 0;
-num = 0;
-digit = 0;
-operation = 0;
-}
-
- void phoneDraw()
-{
-display.clearDisplay();
-display.setCursor(0,
-4);
-display.print("Mike");
-display.setCursor(0,
-14);
-display.print("0436789");
-display.drawLine(0,
-1,
-63,
-1,
-1);
-display.setCursor(0,
-28);
-display.print("Betty");
-display.setCursor(0,
-38);
-display.print("6574834");
-display.drawLine(0,
-25,
-63,
-25,
-1);
-display.setCursor(0,
-52);
-display.print("JohnConor");
-display.setCursor(0,
-62);
-display.print("6453722");
-display.drawLine(0,
-49,
-63,
-49,
-1);
-display.setCursor(0,
-76);
-display.print("Luke");
-display.setCursor(0,
-86);
-display.print("2275849");
-display.drawLine(0,
-73,
-63,
-73,
-1);
-display.display();
+    if (command == 'L') n = readkey('l');
+    if (command == 'R') n = readkey('r');
+    if (command == 'W') n = readkey('m');
+    if (n == 2) xp = (xp <= 0 ? 0 : xp - 1);
+    if (n == 4) xp = (xp >= 32 ? 32 : xp + 1);
+    if (command == 'W') {
+      mood = (mood >= 5 ? 0 : mood + 1);
+    }
+    if (n != 0) {
+      wait = 0;
+      step = 0;
+    }
+  }
 }
